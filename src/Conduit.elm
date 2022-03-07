@@ -1,5 +1,7 @@
 module Conduit exposing (main)
 
+import Array exposing (Array) 
+import Browser as Browser
 import Element exposing (..)
 import Element.Background as Background
 import Element.Border as Border
@@ -114,22 +116,24 @@ container =
         , app
         ]
 
-
+view : Model -> Html Msg
+view model =
+    layout [ width fill ] container
 
 --- Update ---
 
 
-update : Msg -> Model -> Model
+update : Msg -> Model -> (Model, Cmd Msg)
 update msg model =
     case msg of
         TagSelected Nothing ->
-            model
+            (model, Cmd.none)
 
         TagSelected (Just t) ->
-            { model | selectedTag = Just t }
+            ({ model | selectedTag = Just t }, Cmd.none)
 
         ArticleSelected a ->
-            { model | articleSet = [ a ], selectedTag = Nothing }
+            ({ model | articleSet = [ a ], selectedTag = Nothing }, Cmd.none)
 
 
 type Msg
@@ -197,6 +201,9 @@ type alias User =
 --- Main ---
 
 
-main : Html msg
+main : Program () Model Msg
 main =
-    layout [ width fill ] container
+    Browser.element { init = \flags -> (sampleModel, Cmd.none)
+    , view = view
+    , update = update
+    , subscriptions = \model -> Sub.none }
