@@ -10,6 +10,10 @@ import Html exposing (Html)
 import Time
 
 
+
+-- Model
+
+
 xWidth : Int
 xWidth =
     50
@@ -26,6 +30,34 @@ type alias Pos =
 
 type alias Board =
     List Pos
+
+
+type State
+    = Running
+    | Paused
+
+
+type alias Model =
+    { board : Board
+    , time : Time.Posix
+    , state : State
+    }
+
+
+glider : Board
+glider =
+    [ ( 4, 4 ), ( 4, 3 ), ( 4, 2 ), ( 3, 4 ), ( 2, 1 ) ]
+
+
+init : () -> ( Model, Cmd Msg )
+init _ =
+    ( Model glider (Time.millisToPosix 0) Running
+    , Cmd.none
+    )
+
+
+
+-- Helpers
 
 
 isAlive : Board -> Pos -> Bool
@@ -111,31 +143,24 @@ step b =
     survivors b ++ births b
 
 
-type alias Model =
-    { board : Board
-    , time : Time.Posix
-    , running : Clock
-    }
+flipState : State -> State
+flipState c =
+    case c of
+        Running ->
+            Paused
 
+        Paused ->
+            Running
 
-type Msg
-    = Tick Time.Posix
-    | ClickedPause
-    | ClickedCell Pos
-
-type Clock
-    = Running
-    | Paused
-
-flipClock : Clock -> Clock
-flipClock c =
-  case c of
-    Running -> Paused
-    Paused -> Running
 
 subscriptions : Model -> Sub Msg
-subscriptions _ =
-    Time.every 500 Tick
+subscriptions model =
+    case model.state of
+        Paused ->
+            Sub.none
+
+        Running ->
+            Time.every 500 Tick
 
 
 flipCell : Board -> Pos -> Board
@@ -147,18 +172,24 @@ flipCell b p =
         p :: b
 
 
+
+-- Update
+
+
+type Msg
+    = Tick Time.Posix
+    | ClickedPause
+    | ClickedCell Pos
+
+
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
         Tick _ ->
-            if model.running == Running then
-                ( { model | board = step model.board }, Cmd.none )
-
-            else
-                ( model, Cmd.none )
+            ( { model | board = step model.board }, Cmd.none )
 
         ClickedPause ->
-            ( { model | running = flipClock model.running }, Cmd.none )
+            ( { model | state = flipState model.state }, Cmd.none )
 
         ClickedCell c ->
             ( { model | board = flipCell model.board c }, Cmd.none )
@@ -241,10 +272,13 @@ printBoard model =
                 [ size 64
                 , onClick <| ClickedPause
                 ]
-                [ text
-                    case model.running of
-                      Running -> pauseGlyph
-                      Paused -> repeatGlyph
+                [ text <|
+                    case model.state of
+                        Running ->
+                            pauseGlyph
+
+                        Paused ->
+                            repeatGlyph
                 ]
             ]
 
@@ -273,20 +307,9 @@ view model =
     printBoard model
 
 
-glider : Board
-glider =
-    [ ( 4, 4 ), ( 4, 3 ), ( 4, 2 ), ( 3, 4 ), ( 2, 1 ) ]
-
-
-init : () -> ( Model, Cmd Msg )
-init _ =
-    ( Model glider (Time.millisToPosix 0) Running
-    , Cmd.none
-    )
-
-
 
 --- Main ---
+
 
 main : Program () Model Msg
 main =
