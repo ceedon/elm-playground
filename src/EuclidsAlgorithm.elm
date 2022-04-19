@@ -1,8 +1,8 @@
 module EuclidsAlgorithm exposing (..)
 
 
-applyEuclids : Int -> Int -> Int
-applyEuclids first second =
+apply : Int -> Int -> Int
+apply first second =
     let
         remainder =
             remainderBy first second
@@ -11,4 +11,4 @@ applyEuclids first second =
         first
 
     else
-        applyEuclids first remainder
+        apply remainder first
